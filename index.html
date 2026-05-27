@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#00ff41">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cipher">
+<title>Cipher Daily</title>
+<link rel="manifest" href='data:application/manifest+json,{"name":"Cipher Daily","short_name":"Cipher","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","background_color":"%230a0a0a","theme_color":"%2300ff41","description":"Daily substitution cipher puzzle","icons":[{"src":"data:image/svg%2Bxml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 192 192%27><rect width=%27192%27 height=%27192%27 rx=%2740%27 fill=%27%230a0a0a%27/><text x=%2796%27 y=%27124%27 font-family=%27monospace%27 font-size=%2772%27 font-weight=%27700%27 text-anchor=%27middle%27 fill=%27%2300ff41%27>A%E2%86%92Z</text></svg>","sizes":"192x192","type":"image/svg+xml","purpose":"any"},{"src":"data:image/svg%2Bxml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 512 512%27><rect width=%27512%27 height=%27512%27 rx=%27110%27 fill=%27%230a0a0a%27/><text x=%27256%27 y=%27330%27 font-family=%27monospace%27 font-size=%27190%27 font-weight=%27700%27 text-anchor=%27middle%27 fill=%27%2300ff41%27>A%E2%86%92Z</text></svg>","sizes":"512x512","type":"image/svg+xml","purpose":"any maskable"}]}'>
+<link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%230a0a0a'/><text x='96' y='124' font-family='monospace' font-size='72' font-weight='700' text-anchor='middle' fill='%2300ff41'>A%E2%86%92Z</text></svg>">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+  :root{
+    --bg:#0a0a0a;--surface:#111;--surface2:#161616;--border:#1f3a1f;
+    --green:#00ff41;--green-dim:#00aa2c;--green-bright:#7fff8f;--green-glow:rgba(0,255,65,.35);
+    --amber:#ffb340;--red:#ff5050;--text:#e8e8e8;--dim:#888;--mono:'SF Mono',SFMono-Regular,ui-monospace,Menlo,Consolas,'Courier New',monospace;
+  }
+  html,body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;min-height:100vh;min-height:100dvh;overflow-x:hidden}
+  body{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  #app{max-width:430px;margin:0 auto;padding:8px 12px 16px;display:flex;flex-direction:column;gap:10px;min-height:100vh;min-height:100dvh}
+  header{display:flex;flex-direction:column;gap:6px;padding:8px 4px 4px;border-bottom:1px solid var(--border)}
+  .title-row{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .title{font-size:18px;font-weight:700;color:var(--green);letter-spacing:.5px}
+  .title .blink{animation:blink 1.2s steps(2) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .day-tag{font-size:11px;color:var(--dim)}
+  .meta-row{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+  .meta-row .score{color:var(--green-bright);font-weight:700;font-size:15px}
+  .meta-row .timer{color:var(--dim);font-variant-numeric:tabular-nums}
+  .progress-wrap{display:flex;align-items:center;gap:8px}
+  .progress{flex:1;height:6px;background:#1a1a1a;border:1px solid var(--border);border-radius:3px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--green-dim),var(--green));transition:width .4s ease;width:0%}
+  .progress-text{font-size:10px;color:var(--dim);min-width:60px;text-align:right}
+  .puzzle{padding:12px 4px;display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center;align-content:flex-start;min-height:160px;line-height:1.2}
+  .word{display:inline-flex;white-space:nowrap}
+  .tile,.punct{display:inline-flex;flex-direction:column;align-items:center;vertical-align:top}
+  .tile{cursor:pointer;padding:1px 2px;border-radius:3px;min-width:14px;transition:background .15s}
+  .tile:active{background:rgba(0,255,65,.18)}
+  .tile.selected{background:rgba(0,255,65,.22);outline:1px solid var(--green)}
+  .tile .c{font-size:16px;font-weight:700;color:var(--green);line-height:1.1;letter-spacing:.5px}
+  .tile .g{font-size:13px;line-height:1.3;height:16px;color:var(--dim);font-weight:600}
+  .tile.filled .g{color:var(--amber)}
+  .tile.correct .g{color:var(--green-bright);text-shadow:0 0 6px var(--green-glow)}
+  .tile.hint .g{color:#9fffff;text-shadow:0 0 6px rgba(120,220,255,.5)}
+  .tile.reveal{animation:reveal .55s ease}
+  @keyframes reveal{0%{transform:scale(1)}30%{transform:scale(1.35);filter:brightness(1.6)}100%{transform:scale(1)}}
+  .punct{padding:1px 1px}
+  .punct .c{font-size:16px;color:var(--dim);line-height:1.1}
+  .punct .g{height:16px}
+  .attribution{text-align:center;color:var(--dim);font-size:12px;font-style:italic;margin-top:4px;min-height:16px}
+  .attribution.shown{color:var(--green-dim)}
+  .section{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+  .sec-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;cursor:pointer;font-size:12px;color:var(--green-dim);text-transform:uppercase;letter-spacing:1px}
+  .sec-head .arrow{transition:transform .25s;font-size:10px}
+  .section.closed .sec-head .arrow{transform:rotate(-90deg)}
+  .sec-body{padding:8px 10px 12px;border-top:1px solid var(--border)}
+  .section.closed .sec-body{display:none}
+  .freq{display:grid;grid-template-columns:repeat(2,1fr);gap:4px 12px}
+  .freq-row{display:grid;grid-template-columns:18px 1fr 22px;align-items:center;gap:6px;font-size:11px}
+  .freq-row .lt{color:var(--green);font-weight:700;text-align:center}
+  .freq-row .bar{height:8px;background:#1a1a1a;border-radius:2px;overflow:hidden}
+  .freq-row .bf{height:100%;background:var(--green-dim);border-radius:2px}
+  .freq-row.mapped .bf{background:var(--green-bright)}
+  .freq-row .ct{color:var(--dim);text-align:right;font-variant-numeric:tabular-nums}
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+  .gcell{aspect-ratio:1;background:#0d0d0d;border:1px solid #222;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;padding:2px}
+  .gcell.active{border-color:var(--border)}
+  .gcell.unused{opacity:.25}
+  .gcell.correct{border-color:var(--green);background:rgba(0,255,65,.08)}
+  .gcell.incorrect{border-color:var(--amber);background:rgba(255,179,64,.06)}
+  .gcell .gc{font-size:13px;font-weight:700;color:var(--green);line-height:1}
+  .gcell .gm{font-size:11px;line-height:1;margin-top:2px;color:var(--dim)}
+  .gcell.correct .gm{color:var(--green-bright)}
+  .gcell.incorrect .gm{color:var(--amber)}
+  .gcell:active{transform:scale(.94)}
+  .actions{display:grid;grid-template-columns:1fr 1fr 1fr 44px;gap:6px;margin-top:auto}
+  .btn{background:var(--surface);border:1px solid var(--border);color:var(--green);padding:11px 6px;border-radius:6px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s}
+  .btn:active{background:var(--surface2);transform:scale(.97)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.primary{border-color:var(--green);background:rgba(0,255,65,.06)}
+  .btn small{font-size:10px;color:var(--dim);font-weight:400;text-transform:none;letter-spacing:0;margin-left:3px}
+  .btn .sub{font-size:9px;color:var(--dim);text-transform:none;letter-spacing:0;font-weight:400;margin-top:1px}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;animation:fade .2s}
+  @keyframes fade{from{opacity:0}}
+  .modal{background:var(--surface);border:1px solid var(--green);border-radius:10px;padding:16px;max-width:360px;width:100%;box-shadow:0 0 40px var(--green-glow)}
+  .modal h2{color:var(--green);font-size:16px;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;text-align:center}
+  .modal p{font-size:13px;line-height:1.5;color:var(--text);margin-bottom:10px}
+  .modal .hint-line{color:var(--green-dim);font-size:12px}
+  .modal .ok{display:block;width:100%;margin-top:14px;padding:12px;background:var(--green);border:none;color:#000;font-weight:700;font-family:var(--mono);border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;font-size:13px}
+  .modal .ok:active{background:var(--green-bright)}
+  .picker-title{color:var(--dim);text-align:center;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+  .picker-letter{text-align:center;font-size:30px;font-weight:700;color:var(--green);margin-bottom:10px;letter-spacing:2px}
+  .picker-letter .arrow{color:var(--dim);font-size:20px;margin:0 8px}
+  .picker-letter .target{color:var(--amber);min-width:24px;display:inline-block}
+  .picker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px}
+  .pk{background:var(--surface2);border:1px solid #2a2a2a;color:var(--green);padding:10px 0;border-radius:5px;font-family:var(--mono);font-size:15px;font-weight:700;cursor:pointer;transition:all .12s}
+  .pk:active{transform:scale(.92);background:rgba(0,255,65,.2)}
+  .pk.used{opacity:.4;color:var(--amber)}
+  .pk.current{border-color:var(--green);background:rgba(0,255,65,.15)}
+  .pk-actions{display:flex;gap:6px}
+  .pk-actions button{flex:1;padding:11px;background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:5px;font-family:var(--mono);font-size:12px;text-transform:uppercase;cursor:pointer;letter-spacing:1px}
+  .pk-actions .clear{border-color:var(--amber);color:var(--amber)}
+  .pk-actions button:active{background:var(--surface2)}
+  .completion .big-score{font-size:42px;color:var(--green);text-align:center;font-weight:700;line-height:1;margin:8px 0}
+  .completion .label{text-align:center;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:2px;margin-bottom:14px}
+  .completion .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px;text-align:center}
+  .completion .stat{background:var(--surface2);padding:8px 4px;border-radius:5px;border:1px solid var(--border)}
+  .completion .stat .v{color:var(--green);font-weight:700;font-size:16px}
+  .completion .stat .l{color:var(--dim);font-size:10px;text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+  .emoji-grid{text-align:center;font-size:22px;letter-spacing:3px;line-height:1.4;margin:12px 0;font-family:Apple Color Emoji,Segoe UI Emoji,emoji,system-ui}
+  .completion .copy-hint{text-align:center;color:var(--dim);font-size:10px;margin-top:6px}
+  .tutorial-content p{margin-bottom:10px}
+  .tutorial-content .ex{display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;padding:8px;background:var(--surface2);border-radius:5px;border:1px solid var(--border)}
+  .tutorial-content .ex .e-tile{display:inline-flex;flex-direction:column;align-items:center}
+  .tutorial-content .ex .e-tile .c{font-size:18px;font-weight:700;color:var(--green)}
+  .tutorial-content .ex .e-tile .g{font-size:14px;color:var(--green-bright);height:16px}
+  .icon{width:14px;height:14px;display:inline-block;vertical-align:-2px}
+  .sound-btn{font-size:14px;padding:0}
+  .footer-note{text-align:center;font-size:10px;color:#444;padding-top:4px}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;padding:10px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:200;animation:toastIn .3s,toastOut .3s 1.7s forwards;pointer-events:none}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}}
+  @keyframes toastOut{to{opacity:0;transform:translate(-50%,-10px)}}
+  @media (max-width:380px){
+    .tile .c{font-size:15px}
+    .tile .g{font-size:12px;height:15px}
+    .grid{gap:4px}
+    .gcell .gc{font-size:12px}
+    .gcell .gm{font-size:10px}
+  }
+  /* Ensure [hidden] always wins over display:flex on .overlay */
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="title-row">
+      <div class="title">CIPHER<span class="blink">_</span></div>
+      <div class="day-tag" id="dayTag">DAY · ―</div>
+    </div>
+    <div class="meta-row">
+      <div>SCORE <span class="score" id="score">1000</span></div>
+      <div class="timer" id="timer">00:00</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress"><div class="progress-fill" id="pfill"></div></div>
+      <div class="progress-text" id="ptext">0% decoded</div>
+    </div>
+  </header>
+
+  <div class="puzzle" id="puzzle"></div>
+  <div class="attribution" id="attribution"></div>
+
+  <div class="section closed" id="freqSec">
+    <div class="sec-head" data-toggle="freqSec">
+      <span>▾ Frequency Analysis</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="freq" id="freq"></div>
+    </div>
+  </div>
+
+  <div class="section" id="gridSec">
+    <div class="sec-head" data-toggle="gridSec">
+      <span>▾ Alphabet Mapping</span>
+      <span class="arrow">▼</span>
+    </div>
+    <div class="sec-body">
+      <div class="grid" id="grid"></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="hintBtn">Hint<span class="sub">−20</span></button>
+    <button class="btn" id="resetBtn">Reset</button>
+    <button class="btn primary" id="shareBtn">Share</button>
+    <button class="btn sound-btn" id="soundBtn" title="Sound">🔊</button>
+  </div>
+  <div class="footer-note">tap any letter · same tap clears</div>
+</div>
+
+<!-- Tutorial -->
+<div class="overlay" id="tutorial" hidden>
+  <div class="modal tutorial-content">
+    <h2>HOW TO PLAY</h2>
+    <p>Each day a famous quote is scrambled with a random letter substitution. Every <span style="color:var(--green)">A</span> might become <span style="color:var(--green)">Q</span>, every <span style="color:var(--green)">B</span> might become <span style="color:var(--green)">X</span>, and so on.</p>
+    <p>Tap any letter in the puzzle and pick what you think it really is. All matching letters update at once.</p>
+    <div class="ex">
+      <div class="e-tile"><span class="c">Q</span><span class="g">A</span></div>
+      <div class="e-tile"><span class="c">X</span><span class="g">B</span></div>
+      <div class="e-tile"><span class="c">G</span><span class="g">_</span></div>
+    </div>
+    <p class="hint-line">💡 Use the frequency chart — common letters like E, T, A, O appear most often. Hints reveal one letter but cost 20 points.</p>
+    <button class="ok" id="tutOk">START DECODING</button>
+  </div>
+</div>
+
+<!-- Letter Picker -->
+<div class="overlay" id="picker" hidden>
+  <div class="modal">
+    <div class="picker-title">Decode this letter</div>
+    <div class="picker-letter"><span id="pkCipher">?</span><span class="arrow">→</span><span class="target" id="pkCurrent">_</span></div>
+    <div class="picker-grid" id="pickerGrid"></div>
+    <div class="pk-actions">
+      <button class="clear" id="pkClear">Clear</button>
+      <button id="pkCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Completion -->
+<div class="overlay" id="completion" hidden>
+  <div class="modal">
+    <h2 id="compTitle">DECODED!</h2>
+    <div class="label">Final Score</div>
+    <div class="big-score" id="finalScore">0</div>
+    <div class="stats">
+      <div class="stat"><div class="v" id="statTime">0:00</div><div class="l">Time</div></div>
+      <div class="stat"><div class="v" id="statHints">0</div><div class="l">Hints</div></div>
+      <div class="stat"><div class="v" id="statAcc">0%</div><div class="l">Decoded</div></div>
+    </div>
+    <div class="attribution shown" id="compQuote"></div>
+    <div class="emoji-grid" id="emojiGrid"></div>
+    <button class="ok" id="copyShare">COPY RESULT</button>
+    <div class="copy-hint" id="copyHint">tap to copy to clipboard</div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ─── DATA ────────────────────────────────────────────────────────────
+const QUOTES = [
+  {t:"THE ONLY WAY TO DO GREAT WORK IS TO LOVE WHAT YOU DO", a:"Steve Jobs"},
+  {t:"BE THE CHANGE THAT YOU WISH TO SEE IN THE WORLD", a:"Mahatma Gandhi"},
+  {t:"IN THE MIDDLE OF DIFFICULTY LIES OPPORTUNITY", a:"Albert Einstein"},
+  {t:"THE JOURNEY OF A THOUSAND MILES BEGINS WITH A SINGLE STEP", a:"Lao Tzu"},
+  {t:"I THINK THEREFORE I AM", a:"Rene Descartes"},
+  {t:"KNOWLEDGE IS POWER", a:"Francis Bacon"},
+  {t:"FLOAT LIKE A BUTTERFLY STING LIKE A BEE", a:"Muhammad Ali"},
+  {t:"STAY HUNGRY STAY FOOLISH", a:"Steve Jobs"},
+  {t:"IMAGINATION IS MORE IMPORTANT THAN KNOWLEDGE", a:"Albert Einstein"},
+  {t:"NOT ALL THOSE WHO WANDER ARE LOST", a:"J R R Tolkien"},
+  {t:"THAT WHICH DOES NOT KILL US MAKES US STRONGER", a:"Friedrich Nietzsche"},
+  {t:"AN EYE FOR AN EYE MAKES THE WHOLE WORLD BLIND", a:"Mahatma Gandhi"},
+  {t:"TO BE OR NOT TO BE THAT IS THE QUESTION", a:"William Shakespeare"},
+  {t:"THE UNEXAMINED LIFE IS NOT WORTH LIVING", a:"Socrates"},
+  {t:"I CAME I SAW I CONQUERED", a:"Julius Caesar"},
+  {t:"WHATEVER YOU ARE BE A GOOD ONE", a:"Abraham Lincoln"},
+  {t:"THE FUTURE BELONGS TO THOSE WHO BELIEVE IN THEIR DREAMS", a:"Eleanor Roosevelt"},
+  {t:"DO WHAT YOU CAN WITH WHAT YOU HAVE WHERE YOU ARE", a:"Theodore Roosevelt"},
+  {t:"FORTUNE FAVORS THE BOLD", a:"Virgil"},
+  {t:"GIVE ME LIBERTY OR GIVE ME DEATH", a:"Patrick Henry"},
+  {t:"MAY THE FORCE BE WITH YOU", a:"Star Wars"},
+  {t:"HOUSTON WE HAVE A PROBLEM", a:"Jim Lovell"},
+  {t:"WITH GREAT POWER COMES GREAT RESPONSIBILITY", a:"Stan Lee"},
+  {t:"BE YOURSELF EVERYONE ELSE IS ALREADY TAKEN", a:"Oscar Wilde"},
+  {t:"WE HAVE NOTHING TO FEAR BUT FEAR ITSELF", a:"Franklin D Roosevelt"},
+  {t:"POWER CORRUPTS AND ABSOLUTE POWER CORRUPTS ABSOLUTELY", a:"Lord Acton"},
+  {t:"THE PEN IS MIGHTIER THAN THE SWORD", a:"Edward Bulwer Lytton"},
+  {t:"BEAUTY IS IN THE EYE OF THE BEHOLDER", a:"Margaret Wolfe Hungerford"},
+  {t:"EVERY CLOUD HAS A SILVER LINING", a:"John Milton"},
+  {t:"I HAVE NOTHING TO DECLARE EXCEPT MY GENIUS", a:"Oscar Wilde"},
+  {t:"ONE SMALL STEP FOR MAN ONE GIANT LEAP FOR MANKIND", a:"Neil Armstrong"},
+  {t:"LIFE IS WHAT HAPPENS WHEN YOU ARE BUSY MAKING OTHER PLANS", a:"John Lennon"},
+  {t:"WITHOUT MUSIC LIFE WOULD BE A MISTAKE", a:"Friedrich Nietzsche"},
+  {t:"EVERYTHING YOU CAN IMAGINE IS REAL", a:"Pablo Picasso"},
+  {t:"BELIEVE YOU CAN AND YOU ARE HALFWAY THERE", a:"Theodore Roosevelt"},
+  {t:"THE ROAD TO HELL IS PAVED WITH GOOD INTENTIONS", a:"Saint Bernard of Clairvaux"}
+];
+
+const ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const EPOCH = new Date(2026, 0, 1).getTime();
+
+// ─── STATE ───────────────────────────────────────────────────────────
+const S = {
+  dateStr: "", dayNum: 0, seed: 0,
+  quote: null, encrypted: "",
+  decipher: {},        // cipher -> correct real letter
+  userMap: {},         // cipher -> user's guess
+  hintMap: {},         // cipher -> true if hint-revealed
+  score: 1000, hintsUsed: 0,
+  startTs: 0, elapsed: 0, finalElapsed: 0,
+  solved: false,
+  selected: null,
+  sound: true,
+  uniqueCipherLetters: [],
+  freq: {},
+  timerHandle: null,
+};
+
+// ─── PRNG (mulberry32) ───────────────────────────────────────────────
+function rng(seed){
+  return function(){
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ seed>>>15, 1 | seed);
+    t = (t + Math.imul(t ^ t>>>7, 61 | t)) ^ t;
+    return ((t ^ t>>>14) >>> 0) / 4294967296;
+  };
+}
+
+function dateStr(d){
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,"0"), dd = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${dd}`;
+}
+function dayNumber(d){
+  return Math.floor((d.setHours(0,0,0,0) - EPOCH) / 86400000) + 1;
+}
+function seedFromDate(d){
+  return d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate();
+}
+
+// ─── CIPHER GENERATION ───────────────────────────────────────────────
+function generateCipher(seed){
+  const r = rng(seed);
+  let arr;
+  for (let tries=0; tries<50; tries++){
+    arr = ALPHA.split("");
+    for (let i=arr.length-1; i>0; i--){
+      const j = Math.floor(r()*(i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    // No fixed point (no letter maps to itself)
+    if (!arr.some((c,i)=> c === ALPHA[i])) break;
+  }
+  // arr[i] = cipher letter for real letter ALPHA[i]
+  // We need decipher: cipher -> real
+  const decipher = {};
+  for (let i=0; i<26; i++) decipher[arr[i]] = ALPHA[i];
+  return { encrypt: ALPHA.split("").reduce((o,L,i)=>(o[L]=arr[i],o),{}), decipher };
+}
+
+function encryptText(text, encryptMap){
+  return text.split("").map(c => /[A-Z]/.test(c) ? encryptMap[c] : c).join("");
+}
+
+// ─── AUDIO ───────────────────────────────────────────────────────────
+let audioCtx = null;
+function ensureAudio(){
+  if (!S.sound) return null;
+  if (!audioCtx){
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ return null; }
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+function beep(freq, dur, type="sine", vol=.08){
+  const ac = ensureAudio(); if (!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, ac.currentTime);
+  g.gain.linearRampToValueAtTime(vol, ac.currentTime + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+  o.connect(g).connect(ac.destination);
+  o.start(); o.stop(ac.currentTime + dur + 0.02);
+}
+function sfx(kind){
+  if (!S.sound) return;
+  switch(kind){
+    case "tap":     beep(880, 0.04, "square", .04); break;
+    case "correct": beep(880, 0.06, "triangle", .06); setTimeout(()=>beep(1320,0.09,"triangle",.06),50); break;
+    case "wrong":   beep(220, 0.10, "sawtooth", .05); break;
+    case "hint":    beep(660, 0.05, "sine", .05); setTimeout(()=>beep(990,0.05,"sine",.05),60); setTimeout(()=>beep(1320,0.10,"sine",.06),120); break;
+    case "win":     [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.18,"triangle",.07), i*110)); break;
+    case "clear":   beep(440, 0.05, "sine", .04); break;
+  }
+}
+
+// ─── STORAGE ─────────────────────────────────────────────────────────
+const LS = {
+  save(){
+    const d = {
+      userMap: S.userMap, hintMap: S.hintMap,
+      score: S.score, hintsUsed: S.hintsUsed,
+      elapsed: S.solved ? S.finalElapsed : Math.floor((Date.now()-S.startTs)/1000),
+      solved: S.solved, finalElapsed: S.finalElapsed
+    };
+    try { localStorage.setItem("cipher_p_"+S.dateStr, JSON.stringify(d)); } catch(e){}
+  },
+  load(){
+    try {
+      const raw = localStorage.getItem("cipher_p_"+S.dateStr);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch(e){ return null; }
+  },
+  history(){
+    try { return JSON.parse(localStorage.getItem("cipher_history")||"[]"); } catch(e){ return []; }
+  },
+  addHistory(entry){
+    const h = LS.history();
+    if (!h.find(x => x.date === entry.date)) {
+      h.push(entry);
+      try { localStorage.setItem("cipher_history", JSON.stringify(h.slice(-90))); } catch(e){}
+    }
+  }
+};
+
+// ─── INIT ────────────────────────────────────────────────────────────
+function init(){
+  const today = new Date();
+  S.dateStr = dateStr(new Date(today));
+  S.dayNum  = dayNumber(new Date(today));
+  S.seed    = seedFromDate(today);
+
+  const idx = (S.dayNum - 1) % QUOTES.length;
+  S.quote = QUOTES[idx];
+
+  const cph = generateCipher(S.seed);
+  S.decipher = cph.decipher;
+  S.encrypted = encryptText(S.quote.t, cph.encrypt);
+
+  // Unique cipher letters that appear & their frequencies
+  S.freq = {};
+  for (const c of S.encrypted){
+    if (/[A-Z]/.test(c)) S.freq[c] = (S.freq[c]||0)+1;
+  }
+  S.uniqueCipherLetters = Object.keys(S.freq).sort();
+
+  // ─── VERSION MIGRATION ──────────────────────────────────────────
+  const SAVE_VERSION = "3";
+  if (localStorage.getItem("cipher_version") !== SAVE_VERSION) {
+    try {
+      // Clear only game-data keys (progress + history).
+      // Preserve cipher_sound and cipher_tutorial_seen so the user
+      // does not lose their preferences or see the tutorial again.
+      Object.keys(localStorage)
+        .filter(k => k.startsWith("cipher_p_") || k === "cipher_history")
+        .forEach(k => localStorage.removeItem(k));
+      localStorage.setItem("cipher_version", SAVE_VERSION);
+    } catch(e) {}
+  }
+
+  // Load saved
+  const saved = LS.load();
+  if (saved) {
+    S.userMap = saved.userMap || {};
+    S.hintMap = saved.hintMap || {};
+    S.score = saved.score ?? 1000;
+    S.hintsUsed = saved.hintsUsed || 0;
+    S.elapsed = saved.elapsed || 0;
+    S.finalElapsed = saved.finalElapsed || 0;
+
+    if (saved.solved) {
+      // finalElapsed is only written by checkComplete() at the exact
+      // moment of solving. solved:true with finalElapsed of 0 means
+      // the save is corrupt (written by an older incompatible version).
+      if (S.finalElapsed > 0) {
+        S.solved = true;          // valid completed solve — show modal
+      } else {
+        // Corrupt entry: reset to a clean playable state and remove
+        // the bad localStorage key so it cannot resurface on reload.
+        S.userMap = {};
+        S.hintMap = {};
+        S.score = 1000;
+        S.hintsUsed = 0;
+        S.elapsed = 0;
+        S.solved = false;
+        try { localStorage.removeItem("cipher_p_" + S.dateStr); } catch(e) {}
+      }
+    }
+    // saved.solved === false: normal in-progress state, already loaded above.
+    // S.solved stays false (its default), nothing further needed.
+  }
+  S.sound = localStorage.getItem("cipher_sound") !== "0";
+
+  // Day tag
+  document.getElementById("dayTag").textContent = `DAY · ${S.dayNum}  ·  ${formatDateDisplay(today)}`;
+  document.getElementById("soundBtn").textContent = S.sound ? "🔊" : "🔇";
+
+  // Start timer
+  if (!S.solved){
+    S.startTs = Date.now() - S.elapsed*1000;
+    startTimer();
+  } else {
+    document.getElementById("timer").textContent = formatTime(S.finalElapsed);
+  }
+
+  renderAll();
+
+  // Tutorial
+  if (!localStorage.getItem("cipher_tutorial_seen")){
+    document.getElementById("tutorial").hidden = false;
+  }
+
+  // Show completion if already done
+  if (S.solved) setTimeout(showCompletion, 300);
+}
+
+function formatDateDisplay(d){
+  return d.toLocaleDateString(undefined, { month:"short", day:"numeric" }).toUpperCase();
+}
+function formatTime(sec){
+  const m = Math.floor(sec/60), s = sec%60;
+  return String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+}
+
+// ─── TIMER ───────────────────────────────────────────────────────────
+function startTimer(){
+  stopTimer();
+  S.timerHandle = setInterval(()=>{
+    if (S.solved){ stopTimer(); return; }
+    const e = Math.floor((Date.now()-S.startTs)/1000);
+    S.elapsed = e;
+    document.getElementById("timer").textContent = formatTime(e);
+  }, 500);
+}
+function stopTimer(){ if (S.timerHandle){ clearInterval(S.timerHandle); S.timerHandle=null; } }
+
+// ─── RENDER ──────────────────────────────────────────────────────────
+function renderAll(){
+  renderPuzzle();
+  renderAttribution();
+  renderFreq();
+  renderGrid();
+  renderScore();
+  renderProgress();
+}
+
+function renderPuzzle(){
+  const el = document.getElementById("puzzle");
+  el.innerHTML = "";
+  const words = S.encrypted.split(" ");
+  words.forEach(word => {
+    const w = document.createElement("span");
+    w.className = "word";
+    for (const ch of word){
+      if (/[A-Z]/.test(ch)){
+        const tile = document.createElement("span");
+        tile.className = "tile";
+        tile.dataset.c = ch;
+        const guess = S.userMap[ch];
+        if (guess){
+          tile.classList.add("filled");
+          if (S.decipher[ch] === guess) tile.classList.add("correct");
+          if (S.hintMap[ch]) tile.classList.add("hint");
+        }
+        if (S.selected === ch) tile.classList.add("selected");
+        const c = document.createElement("span"); c.className = "c"; c.textContent = ch;
+        const g = document.createElement("span"); g.className = "g"; g.textContent = guess || "_";
+        tile.appendChild(c); tile.appendChild(g);
+        tile.addEventListener("click", () => onTileClick(ch));
+        w.appendChild(tile);
+      } else {
+        const p = document.createElement("span"); p.className = "punct";
+        const c = document.createElement("span"); c.className = "c"; c.textContent = ch;
+        const g = document.createElement("span"); g.className = "g"; g.textContent = "";
+        p.appendChild(c); p.appendChild(g);
+        w.appendChild(p);
+      }
+    }
+    el.appendChild(w);
+  });
+}
+
+function renderAttribution(){
+  const el = document.getElementById("attribution");
+  if (S.solved){ el.textContent = "— " + S.quote.a; el.classList.add("shown"); }
+  else { el.textContent = ""; el.classList.remove("shown"); }
+}
+
+function renderFreq(){
+  const el = document.getElementById("freq"); el.innerHTML = "";
+  const max = Math.max(...Object.values(S.freq), 1);
+  S.uniqueCipherLetters.forEach(L => {
+    const ct = S.freq[L];
+    const row = document.createElement("div"); row.className = "freq-row";
+    if (S.userMap[L]) row.classList.add("mapped");
+    const lt = document.createElement("span"); lt.className = "lt"; lt.textContent = L;
+    const bar = document.createElement("span"); bar.className = "bar";
+    const bf = document.createElement("span"); bf.className = "bf"; bf.style.width = (ct/max*100)+"%";
+    bar.appendChild(bf);
+    const c = document.createElement("span"); c.className = "ct"; c.textContent = ct;
+    row.appendChild(lt); row.appendChild(bar); row.appendChild(c);
+    row.addEventListener("click", () => onTileClick(L));
+    el.appendChild(row);
+  });
+}
+
+function renderGrid(){
+  const el = document.getElementById("grid"); el.innerHTML = "";
+  for (const L of ALPHA){
+    const cell = document.createElement("div");
+    cell.className = "gcell";
+    const inText = S.freq[L] > 0;
+    if (!inText) cell.classList.add("unused");
+    else cell.classList.add("active");
+    const guess = S.userMap[L];
+    if (guess){
+      if (S.decipher[L] === guess) cell.classList.add("correct");
+      else cell.classList.add("incorrect");
+    }
+    const gc = document.createElement("span"); gc.className = "gc"; gc.textContent = L;
+    const gm = document.createElement("span"); gm.className = "gm"; gm.textContent = guess || "·";
+    cell.appendChild(gc); cell.appendChild(gm);
+    if (inText) cell.addEventListener("click", () => onTileClick(L));
+    el.appendChild(cell);
+  }
+}
+
+function renderScore(){
+  document.getElementById("score").textContent = S.score;
+}
+
+function renderProgress(){
+  const total = S.uniqueCipherLetters.length;
+  let correct = 0;
+  for (const L of S.uniqueCipherLetters){
+    if (S.userMap[L] === S.decipher[L]) correct++;
+  }
+  const pct = total ? Math.round(correct/total*100) : 0;
+  document.getElementById("pfill").style.width = pct + "%";
+  document.getElementById("ptext").textContent = pct + "% decoded";
+  return { correct, total, pct };
+}
+
+// ─── INTERACTIONS ────────────────────────────────────────────────────
+function onTileClick(cipherLetter){
+  if (S.solved) return;
+  if (!S.freq[cipherLetter]) return;  // not in puzzle
+  sfx("tap");
+  openPicker(cipherLetter);
+}
+
+function openPicker(cipherLetter){
+  S.selected = cipherLetter;
+  document.getElementById("pkCipher").textContent = cipherLetter;
+  document.getElementById("pkCurrent").textContent = S.userMap[cipherLetter] || "_";
+
+  // Letters already used elsewhere
+  const usedElsewhere = new Set();
+  for (const [c, g] of Object.entries(S.userMap)){
+    if (c !== cipherLetter && g) usedElsewhere.add(g);
+  }
+
+  const g = document.getElementById("pickerGrid"); g.innerHTML = "";
+  for (const L of ALPHA){
+    const b = document.createElement("button");
+    b.className = "pk"; b.textContent = L;
+    if (usedElsewhere.has(L)) b.classList.add("used");
+    if (S.userMap[cipherLetter] === L) b.classList.add("current");
+    b.addEventListener("click", () => { assignLetter(cipherLetter, L); closePicker(); });
+    g.appendChild(b);
+  }
+
+  document.getElementById("pkClear").style.display = S.userMap[cipherLetter] ? "" : "none";
+  document.getElementById("picker").hidden = false;
+  renderPuzzle();
+}
+
+function closePicker(){
+  S.selected = null;
+  document.getElementById("picker").hidden = true;
+  renderPuzzle();
+}
+
+function assignLetter(cipherLetter, realLetter, isHint=false){
+  const prev = S.userMap[cipherLetter];
+  const wasCorrect = prev === S.decipher[cipherLetter];
+  const willBeCorrect = realLetter === S.decipher[cipherLetter];
+
+  // Remove this real letter from any other cipher slot (1:1 mapping)
+  for (const [c, g] of Object.entries(S.userMap)) {
+    if (c !== cipherLetter && g === realLetter) {
+      const wasCorrectOther = g === S.decipher[c];
+      delete S.userMap[c];
+      if (wasCorrectOther && !isHint) S.score -= 20;
+    }
+  }
+
+  S.userMap[cipherLetter] = realLetter;
+  if (isHint) S.hintMap[cipherLetter] = true;
+
+  // Score delta (player-driven assignments only)
+  if (!isHint){
+    if (!wasCorrect && willBeCorrect){ S.score += 20; sfx("correct"); }
+    else if (wasCorrect && !willBeCorrect){ S.score -= 20; sfx("wrong"); }
+    else if (!willBeCorrect){ sfx("wrong"); }
+    else { sfx("tap"); }
+  }
+
+  // Pulse animation on all matching tiles
+  setTimeout(()=>{
+    document.querySelectorAll(`.tile[data-c="${cipherLetter}"]`).forEach((t,i) => {
+      t.classList.remove("reveal");
+      // restart animation
+      void t.offsetWidth;
+      t.style.animationDelay = (i*40)+"ms";
+      t.classList.add("reveal");
+    });
+  }, 0);
+
+  renderAll();
+  LS.save();
+  checkComplete();
+}
+
+function clearMapping(cipherLetter){
+  const prev = S.userMap[cipherLetter];
+  if (!prev) return;
+  const wasCorrect = prev === S.decipher[cipherLetter];
+  delete S.userMap[cipherLetter];
+  delete S.hintMap[cipherLetter];
+  if (wasCorrect) S.score -= 20;
+  sfx("clear");
+  renderAll();
+  LS.save();
+}
+
+function useHint(){
+  if (S.solved) return;
+  const candidates = S.uniqueCipherLetters.filter(L => S.userMap[L] !== S.decipher[L]);
+  if (!candidates.length) return;
+  const pick = candidates[Math.floor(Math.random()*candidates.length)];
+  S.score -= 20;
+  S.hintsUsed++;
+  sfx("hint");
+  assignLetter(pick, S.decipher[pick], true);
+  toast(`Hint: ${pick} → ${S.decipher[pick]}`);
+}
+
+function resetPuzzle(){
+  const msg = S.solved
+    ? "Puzzle already solved! Reset to practice again?\n(Your recorded score won't change.)"
+    : "Reset all your guesses? Your timer & score will reset too.";
+  if (!confirm(msg)) return;
+  S.userMap = {}; S.hintMap = {}; S.hintsUsed = 0;
+  S.score = 1000; S.solved = false;
+  S.startTs = Date.now(); S.elapsed = 0;
+  document.getElementById("timer").textContent = "00:00";
+  startTimer();
+  renderAll();
+  // Save practice state but preserve the original history entry
+  LS.save();
+}
+
+function checkComplete(){
+  const { correct, total } = renderProgress();
+  if (correct === total && total > 0 && !S.solved){
+    S.solved = true;
+    S.finalElapsed = Math.floor((Date.now()-S.startTs)/1000);
+    // Time bonus
+    let bonus = 0;
+    if (S.finalElapsed < 180) bonus = 200;
+    else if (S.finalElapsed < 300) bonus = 100;
+    S.score += bonus;
+    stopTimer();
+    sfx("win");
+    LS.save();
+    LS.addHistory({
+      date: S.dateStr, day: S.dayNum, score: S.score,
+      time: S.finalElapsed, hints: S.hintsUsed
+    });
+    setTimeout(showCompletion, 700);
+  }
+}
+
+// ─── COMPLETION & SHARE ──────────────────────────────────────────────
+function buildEmojiGrid(){
+  // One row per 5 letters of the unique cipher letters in puzzle, alphabetical
+  const rows = [];
+  for (let i=0; i<S.uniqueCipherLetters.length; i+=5){
+    const slice = S.uniqueCipherLetters.slice(i, i+5);
+    rows.push(slice.map(L => S.userMap[L] === S.decipher[L] ? "🟩" : "⬜").join(""));
+  }
+  return rows.join("\n");
+}
+
+function showCompletion(){
+  const total = S.uniqueCipherLetters.length;
+  let correct = 0;
+  for (const L of S.uniqueCipherLetters) if (S.userMap[L] === S.decipher[L]) correct++;
+  document.getElementById("finalScore").textContent = S.score;
+  document.getElementById("statTime").textContent = formatTime(S.finalElapsed);
+  document.getElementById("statHints").textContent = S.hintsUsed;
+  document.getElementById("statAcc").textContent = Math.round(correct/total*100) + "%";
+  document.getElementById("compQuote").textContent = `"${S.quote.t}" — ${S.quote.a}`;
+  document.getElementById("emojiGrid").innerHTML = buildEmojiGrid().replace(/\n/g,"<br>");
+  document.getElementById("compTitle").textContent = correct === total ? "DECODED!" : "PUZZLE COMPLETE";
+  document.getElementById("completion").hidden = false;
+}
+
+function buildShareText(){
+  const bonus = S.finalElapsed < 180 ? 200 : (S.finalElapsed < 300 ? 100 : 0);
+  return `Cipher Daily · Day ${S.dayNum}\n` +
+         `${buildEmojiGrid()}\n` +
+         `Score ${S.score} · ${formatTime(S.finalElapsed)} · ${S.hintsUsed} hint${S.hintsUsed===1?"":"s"}` +
+         (bonus ? ` · +${bonus} bonus` : "");
+}
+
+async function shareResult(){
+  if (!S.solved){
+    toast("Finish the puzzle first!");
+    return;
+  }
+  const text = buildShareText();
+  try {
+    if (navigator.share){
+      await navigator.share({ text });
+      return;
+    }
+  } catch(e){ /* fall through */ }
+  try {
+    await navigator.clipboard.writeText(text);
+    toast("Result copied!");
+  } catch(e){
+    // Fallback: open completion modal
+    showCompletion();
+  }
+}
+
+async function copyShare(){
+  const text = buildShareText();
+  try {
+    await navigator.clipboard.writeText(text);
+    document.getElementById("copyHint").textContent = "copied ✓";
+    setTimeout(()=>{ document.getElementById("copyHint").textContent = "tap to copy to clipboard"; }, 2000);
+  } catch(e){
+    // Fallback select
+    const ta = document.createElement("textarea");
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); document.getElementById("copyHint").textContent = "copied ✓"; } catch(_){}
+    document.body.removeChild(ta);
+  }
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────
+function toast(msg){
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=> t.remove(), 2100);
+}
+
+// ─── EVENT WIRING ────────────────────────────────────────────────────
+document.getElementById("hintBtn").addEventListener("click", useHint);
+document.getElementById("resetBtn").addEventListener("click", resetPuzzle);
+document.getElementById("shareBtn").addEventListener("click", shareResult);
+document.getElementById("soundBtn").addEventListener("click", () => {
+  S.sound = !S.sound;
+  localStorage.setItem("cipher_sound", S.sound ? "1" : "0");
+  document.getElementById("soundBtn").textContent = S.sound ? "🔊" : "🔇";
+  if (S.sound) sfx("tap");
+});
+document.getElementById("tutOk").addEventListener("click", () => {
+  document.getElementById("tutorial").hidden = true;
+  localStorage.setItem("cipher_tutorial_seen", "1");
+  ensureAudio();
+});
+document.getElementById("pkCancel").addEventListener("click", closePicker);
+document.getElementById("pkClear").addEventListener("click", () => {
+  if (S.selected){ clearMapping(S.selected); }
+  closePicker();
+});
+document.getElementById("picker").addEventListener("click", (e) => {
+  if (e.target.id === "picker") closePicker();
+});
+document.getElementById("copyShare").addEventListener("click", copyShare);
+document.getElementById("completion").addEventListener("click", (e) => {
+  if (e.target.id === "completion") document.getElementById("completion").hidden = true;
+});
+document.querySelectorAll("[data-toggle]").forEach(h => {
+  h.addEventListener("click", () => {
+    document.getElementById(h.dataset.toggle).classList.toggle("closed");
+  });
+});
+
+// Tap anywhere to dismiss tutorial too
+document.getElementById("tutorial").addEventListener("click", (e) => {
+  if (e.target.id === "tutorial"){
+    document.getElementById("tutorial").hidden = true;
+    localStorage.setItem("cipher_tutorial_seen", "1");
+    ensureAudio();
+  }
+});
+
+// Prevent iOS double-tap zoom on tiles
+document.addEventListener("dblclick", (e) => e.preventDefault(), { passive:false });
+
+// ─── PWA: inline service worker via Blob URL ────────────────────────
+(function registerSW(){
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const swCode = `
+      const CACHE = "cipher-daily-v1";
+      self.addEventListener("install", e => { self.skipWaiting(); });
+      self.addEventListener("activate", e => { e.waitUntil(self.clients.claim()); });
+      self.addEventListener("fetch", e => {
+        if (e.request.method !== "GET") return;
+        e.respondWith(
+          caches.open(CACHE).then(cache =>
+            cache.match(e.request).then(hit => {
+              if (hit) return hit;
+              return fetch(e.request).then(resp => {
+                try { cache.put(e.request, resp.clone()); } catch(_){}
+                return resp;
+              }).catch(() => hit);
+            })
+          )
+        );
+      });
+    `;
+    const blob = new Blob([swCode], { type: "application/javascript" });
+    const url = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url).catch(() => { /* Safari blocks blob-URL SW; that's OK */ });
+  } catch(e){ /* ignore */ }
+})();
+
+// ─── GO ──────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
